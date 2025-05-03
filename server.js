@@ -79,11 +79,17 @@ app.get('/', (req, res) => {
 });
 
 // Start server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-  console.log(`JWT Secret: ${process.env.JWT_SECRET ? 'Loaded' : 'Missing'}`);
-  console.log(`Supabase URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || 'Missing'}`);
-  console.log(`Supabase Anon Key: ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY ? 'Loaded' : 'Missing'}`);
-});
+
+
+if (process.env.NODE_ENV !== 'production') {
+  const port = process.env.PORT || 5000;
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+    console.log(`JWT Secret: ${process.env.JWT_SECRET ? 'Loaded' : 'Missing'}`);
+    console.log(`Supabase URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || 'Missing'}`);
+    console.log(`Supabase Anon Key: ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY ? 'Loaded' : 'Missing'}`);
+  });
+}
+export const handler = serverless(app); // Ini penting untuk Vercel
 
 export default app;
