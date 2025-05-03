@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve, join } from 'path';
 import fs from 'fs';
 import path from 'path';
+import serverless from 'serverless-http';
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
