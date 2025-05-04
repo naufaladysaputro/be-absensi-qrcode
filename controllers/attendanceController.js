@@ -27,6 +27,36 @@ class AttendanceController {
     }
   }
 
+  async scanMasuk(req, res) {
+    try {
+      const { unique_code } = req.body;
+      if (!unique_code) {
+        return res.status(400).json({ success: false, message: 'QR Code harus disediakan' });
+      }
+  
+      const result = await attendanceService.handleScanMasuk(unique_code);
+      return res.status(200).json({ success: true, ...result });
+    } catch (error) {
+      console.error('Error in scanMasuk:', error);
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  }
+  
+  async scanPulang(req, res) {
+    try {
+      const { unique_code } = req.body;
+      if (!unique_code) {
+        return res.status(400).json({ success: false, message: 'QR Code harus disediakan' });
+      }
+  
+      const result = await attendanceService.handleScanPulang(unique_code);
+      return res.status(200).json({ success: true, ...result });
+    } catch (error) {
+      console.error('Error in scanPulang:', error);
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
   async getStudentAttendance(req, res) {
     try {
       const { studentId } = req.params;

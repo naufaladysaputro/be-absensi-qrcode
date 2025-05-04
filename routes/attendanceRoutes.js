@@ -16,4 +16,10 @@ router.get('/class/:classId', authMiddleware, attendanceController.getClassAtten
 // Update attendance
 router.put('/:id', authMiddleware, attendanceController.updateAttendance);
 
+// Scan masuk
+router.post('/scan/masuk', authMiddleware, attendanceController.scanMasuk);
+
+// Scan pulang
+router.post('/scan/pulang', authMiddleware, attendanceController.scanPulang);
+
 export default router;

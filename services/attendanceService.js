@@ -65,6 +65,67 @@ class AttendanceService {
     }
   }
 
+  async handleScanMasuk(unique_code) {
+    const student = await Student.findByQRCode(unique_code);
+    if (!student) throw new Error('QR Code tidak valid');
+  
+    const today = new Date();
+    const currentDate = today.toISOString().split('T')[0];
+    const currentTime = today.toTimeString().split(' ')[0];
+  
+    const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
+    
+    if (existingAttendance) {
+      if (existingAttendance.jam_masuk && existingAttendance.jam_pulang) {
+        throw new Error('Siswa sudah melakukan absensi masuk dan pulang hari ini');
+      }
+      if (existingAttendance.jam_masuk) {
+        throw new Error('Siswa telah melakukan scan masuk hari ini');
+      }
+    }
+  
+    const attendance = await Attendance.create({
+      students_id: student.id,
+      classes_id: student.classes_id,
+      tanggal: currentDate,
+      jam_masuk: currentTime,
+      jam_pulang: null,
+      kehadiran: 'Hadir'
+    });
+  
+    return {
+      message: 'Jam masuk berhasil dicatat',
+      attendance
+    };
+  }
+  
+  async handleScanPulang(unique_code) {
+    const student = await Student.findByQRCode(unique_code);
+    if (!student) throw new Error('QR Code tidak valid');
+  
+    const today = new Date();
+    const currentTime = today.toTimeString().split(' ')[0];
+  
+    const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
+  
+    if (!existingAttendance) {
+      throw new Error('Siswa belum melakukan scan masuk hari ini');
+    }
+  
+    if (existingAttendance.jam_pulang) {
+      throw new Error('Siswa sudah melakukan absensi masuk dan pulang hari ini');
+    }
+  
+    const updatedAttendance = await Attendance.update(existingAttendance.id, {
+      jam_pulang: currentTime
+    });
+  
+    return {
+      message: 'Jam pulang berhasil dicatat',
+      attendance: updatedAttendance
+    };
+  }
+
   async getStudentAttendance(studentId, date) {
     try {
       return await Attendance.findByStudentAndDate(studentId, date);

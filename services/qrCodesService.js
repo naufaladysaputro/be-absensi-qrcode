@@ -27,7 +27,7 @@ class QrCodesService {
     try {
       // Generate unique code
       const unique_code = `${student.nis}_${Date.now()}`;
-      
+
       // Generate filename
       const filename = `${student.nama_siswa.replace(/\s+/g, '_')}_${student.nis}.png`;
       const filepath = path.join(this.uploadDir, filename);
@@ -175,6 +175,82 @@ class QrCodesService {
       return result.data;
     } catch (error) {
       console.error('Error getting all QR codes:', error);
+      throw error;
+    }
+  }
+
+  /**
+* Get all QR codes by class ID
+*/
+  async getQrCodesByClassId(classId) {
+    try {
+      const result = await supabase
+        .from('qr_codes_students')
+        .select(`
+        id,
+        students_id,
+        created_at,
+        updated_at,
+        unique_code,
+        qr_path,
+        generated_by,
+        students (
+          id,
+          nis,
+          nama_siswa,
+          jenis_kelamin,
+          classes (
+            id,
+            nama_kelas
+          )
+        )
+      `)
+        .eq('students.classes_id', classId);
+
+      if (result.error) throw result.error;
+      return result.data;
+    } catch (error) {
+      console.error('Error getting QR codes by class ID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate QR codes for all students in a class
+   */
+  async generateQrCodesForClass(classId, userId) {
+    try {
+      // Get students in class
+      const studentsResult = await supabase
+        .from('students')
+        .select('*')
+        .eq('classes_id', classId)
+        .is('deleted_at', null);
+
+      if (studentsResult.error) throw studentsResult.error;
+
+      const students = studentsResult.data;
+      const generated = [];
+      const skipped = [];
+
+      for (const student of students) {
+        const existing = await this.getQrCodeByStudentId(student.id);
+        if (existing) {
+          skipped.push({ student, reason: 'Already has QR code' });
+          continue;
+        }
+
+        try {
+          const qr = await this.generateQrCode(student, userId);
+          generated.push(qr);
+        } catch (err) {
+          skipped.push({ student, reason: err.message });
+        }
+      }
+
+      return { generated, skipped };
+    } catch (error) {
+      console.error('Error generating QR codes for class:', error);
       throw error;
     }
   }

@@ -16,4 +16,10 @@ router.get('/:student_id', authMiddleware, qrCodesController.getQrCode);
 // Delete QR code for a student (requires authentication)
 router.delete('/:student_id', authMiddleware, qrCodesController.deleteQrCode);
 
+// Get QR codes by class ID
+router.get('/class/:class_id', authMiddleware, qrCodesController.getQrCodesByClassId);
+
+// Generate QR codes for all students in a class
+router.post('/generate/class/:class_id', authMiddleware, qrCodesController.generateQrCodesByClassId);
+
 export default router;
