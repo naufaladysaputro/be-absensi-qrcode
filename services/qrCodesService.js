@@ -182,38 +182,35 @@ class QrCodesService {
   /**
 * Get all QR codes by class ID
 */
-  async getQrCodesByClassId(classId) {
-    try {
-      const result = await supabase
-        .from('qr_codes_students')
-        .select(`
-        id,
-        students_id,
-        created_at,
-        updated_at,
-        unique_code,
-        qr_path,
-        generated_by,
-        students (
-          id,
-          nis,
-          nama_siswa,
-          jenis_kelamin,
-          classes (
-            id,
-            nama_kelas
-          )
-        )
-      `)
-        .eq('students.classes_id', classId);
+async getQrCodesByClassId(classId) {
+  try {
+    // Ambil ID siswa dalam kelas
+    const studentsResult = await supabase
+      .from('students')
+      .select('id')
+      .eq('classes_id', classId)
+      .is('deleted_at', null);
 
-      if (result.error) throw result.error;
-      return result.data;
-    } catch (error) {
-      console.error('Error getting QR codes by class ID:', error);
-      throw error;
-    }
+    if (studentsResult.error) throw studentsResult.error;
+
+    const studentIds = studentsResult.data.map(s => s.id);
+
+    if (studentIds.length === 0) return [];
+
+    // Ambil QR path hanya untuk siswa yang cocok
+    const qrResult = await supabase
+      .from('qr_codes_students')
+      .select('qr_path')
+      .in('students_id', studentIds);
+
+    if (qrResult.error) throw qrResult.error;
+
+    return qrResult.data;
+  } catch (error) {
+    console.error('Error getting QR paths by class ID:', error);
+    throw error;
   }
+}
 
   /**
    * Generate QR codes for all students in a class
