@@ -1,5 +1,6 @@
+import { createCanvas, loadImage } from 'canvas';
 import QRCode from 'qrcode';
-import { promises as fs } from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import db from '../config/database.js';
@@ -17,42 +18,50 @@ class QrCodesService {
     });
   }
 
-  /**
-   * Generate QR code for a student
-   * @param {Object} student - Student data
-   * @param {number} userId - ID of user generating QR code
-   * @returns {Promise<Object>} Generated QR code data
-   */
   async generateQrCode(student, userId) {
     try {
-      // Generate unique code
       const unique_code = `${student.nis}_${Date.now()}`;
-
-      // Generate filename
       const filename = `${student.nama_siswa.replace(/\s+/g, '_')}_${student.nis}.png`;
       const filepath = path.join(this.uploadDir, filename);
-
-      // QR Code options with larger size and styling
-      const qrOptions = {
-        type: 'png',
-        width: 400,
-        margin: 1,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        },
-        // Adding text below QR code using built-in renderText option
-        renderOpts: {
-          textMargin: 10,
-          textSize: 32,
-          text: student.nama_siswa
-        }
-      };
-
-      // Generate QR code and save directly to file
-      await QRCode.toFile(filepath, unique_code, qrOptions);
-
-      // Save QR code data to database
+  
+      // Buat QR code buffer (PNG)
+      const qrBuffer = await QRCode.toBuffer(unique_code, {
+        width: 300,
+        margin: 1
+      });
+  
+      // Setup canvas
+      const canvasWidth = 400;
+      const canvasHeight = 500;
+      const canvas = createCanvas(canvasWidth, canvasHeight);
+      const ctx = canvas.getContext('2d');
+  
+      // Background putih
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  
+      // Teks nama siswa
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 20px Arial';
+      const nameText = student.nama_siswa || 'Nama Tidak Diketahui';
+      const nisText = `NIS: ${student.nis || 'N/A'}`;
+  
+      const nameTextWidth = ctx.measureText(nameText).width;
+      ctx.fillText(nameText, (canvasWidth - nameTextWidth) / 2, 50);
+  
+      ctx.font = '16px Arial';
+      const nisTextWidth = ctx.measureText(nisText).width;
+      ctx.fillText(nisText, (canvasWidth - nisTextWidth) / 2, 80);
+  
+      // Tempelkan QR Code
+      const qrImage = await loadImage(qrBuffer);
+      ctx.drawImage(qrImage, 50, 120, 300, 300);
+  
+      // Simpan sebagai PNG
+      const outBuffer = canvas.toBuffer('image/png');
+      await fs.writeFile(filepath, outBuffer);
+  
+      // Simpan data ke database
       const result = await db.query('qr_codes_students', 'insert', {
         data: {
           students_id: student.id,
@@ -63,18 +72,14 @@ class QrCodesService {
           updated_at: new Date().toISOString()
         }
       });
-
-      if (!result) throw new Error('Gagal menyimpan data QR code');
-
+  
       const insertedData = Array.isArray(result) ? result[0] : result;
-      if (!insertedData) throw new Error('Gagal mendapatkan data QR code yang baru dibuat');
-
       return {
         ...insertedData,
         filepath
       };
     } catch (error) {
-      console.error('Error generating QR code:', error);
+      console.error('Error generating QR PNG:', error);
       throw error;
     }
   }
