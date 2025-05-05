@@ -1,4 +1,5 @@
 import db from '../config/database.js';
+import qrCodesService from './qrCodesService.js';
 
 /**
  * Service untuk manajemen data siswa
@@ -10,16 +11,24 @@ class StudentsService {
    */
   async getAllStudents() {
     try {
-      const students = await db.query('students', 'select', {
+      const studentsRaw  = await db.query('students', 'select', {
         columns: `
           *,
           class:classes(id, nama_kelas),
-          selection:selections(id, nama_rombel)
+          selection:selections(id, nama_rombel),
+          qr_codes_students(qr_path)
         `,
         orderBy: {
           column: 'nama_siswa',
           ascending: true
         }
+      });
+      const students = studentsRaw.map(student => {
+        return {
+          ...student,
+          qr_path: student.qr_codes_students?.[0]?.qr_path || null,
+          qr_codes_students: undefined // remove the original array if you don't need it
+        };
       });
       
       return students;
@@ -71,7 +80,8 @@ class StudentsService {
           updated_at: now
         }
       });
-      
+
+      qrCodesService.generateQrCode(result[0], result[0].id)
       return result[0].id;
     } catch (error) {
       throw error;
