@@ -78,10 +78,7 @@ class AttendanceService {
       day: '2-digit',
     }).split('/').reverse().join('-'); // hasil: YYYY-MM-DD
 
-    const currentTime = today.toLocaleTimeString('id-ID', {
-      timeZone: 'Asia/Jakarta',
-      hour12: false, // pakai 24 jam
-    });
+    const currentTime = today.toTimeString().split(' ')[0]; // Format HH:MM:SS
     
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
     
@@ -114,10 +111,7 @@ class AttendanceService {
     if (!student) throw new Error('QR Code tidak valid');
   
     const today = new Date();
-    const currentTime = today.toLocaleTimeString('id-ID', {
-      timeZone: 'Asia/Jakarta',
-      hour12: false, // pakai 24 jam
-    });
+    const currentTime = today.toTimeString().split(' ')[0]; // Format HH:MM:SS
       
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
   
