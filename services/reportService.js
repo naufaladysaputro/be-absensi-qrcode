@@ -138,7 +138,7 @@ class ReportService {
     // Info bulan dan kelas dengan posisi yang tepat
     doc.fontSize(11)
               .text(`Bulan : ${reportInfo.month}`, 30, 95)
-       .text(`Kelas : ${reportInfo.className}`, 30, 110);
+       .text(`Kelas : ${reportInfo.className} ${students[0].selection.nama_rombel}`, 30, 110);
 
 
     // Table settings dengan posisi yang disesuaikan
