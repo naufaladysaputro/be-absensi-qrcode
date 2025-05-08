@@ -3,14 +3,16 @@ import Attendance from '../models/Attendance.js';
 import Student from '../models/Student.js';
 
 class AttendanceService {
+  // Ambil waktu saat ini di zona WIB
   getCurrentWIBTime() {
     const nowWIB = moment().tz('Asia/Jakarta');
     return {
-      currentDate: nowWIB.format('YYYY-MM-DD'), // Format yang cocok dengan database
+      currentDate: nowWIB.format('YYYY-MM-DD'),  // cocok untuk simpan ke DB
       currentTime: nowWIB.format('HH:mm:ss')
     };
   }
 
+  // Scan QR Code umum (masuk/pulang otomatis)
   async scanQRCode(data) {
     try {
       const { unique_code } = data;
@@ -22,6 +24,7 @@ class AttendanceService {
       const existingAttendance = await Attendance.findByStudentAndDate(student.id, currentDate);
 
       if (!existingAttendance) {
+        // Belum absen => catat jam masuk
         const attendance = await Attendance.create({
           students_id: student.id,
           classes_id: student.classes_id,
@@ -36,6 +39,7 @@ class AttendanceService {
           attendance
         };
       } else if (!existingAttendance.jam_pulang) {
+        // Sudah masuk tapi belum pulang => catat jam pulang
         const attendance = await Attendance.update(existingAttendance.id, {
           jam_pulang: currentTime
         });
@@ -52,6 +56,7 @@ class AttendanceService {
     }
   }
 
+  // Scan khusus masuk
   async handleScanMasuk(unique_code) {
     const student = await Student.findByQRCode(unique_code);
     if (!student) throw new Error('QR Code tidak valid');
@@ -84,6 +89,7 @@ class AttendanceService {
     };
   }
 
+  // Scan khusus pulang
   async handleScanPulang(unique_code) {
     const student = await Student.findByQRCode(unique_code);
     if (!student) throw new Error('QR Code tidak valid');
@@ -110,6 +116,7 @@ class AttendanceService {
     };
   }
 
+  // Ambil absensi siswa berdasarkan ID dan tanggal
   async getStudentAttendance(studentId, date) {
     try {
       return await Attendance.findByStudentAndDate(studentId, date);
@@ -118,6 +125,7 @@ class AttendanceService {
     }
   }
 
+  // Ambil seluruh absensi kelas berdasarkan tanggal
   async getAttendanceByClassAndDate(classId, date) {
     try {
       const students = await Student.findByClass(classId);
@@ -153,6 +161,7 @@ class AttendanceService {
     }
   }
 
+  // Admin update absensi manual
   async updateAttendance(attendanceId, updateData) {
     try {
       const validKehadiran = ['Hadir', 'Sakit', 'Izin', 'Tanpa Keterangan'];
