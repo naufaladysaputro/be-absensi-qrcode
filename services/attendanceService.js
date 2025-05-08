@@ -2,16 +2,14 @@ import moment from 'moment-timezone';
 import Attendance from '../models/Attendance.js';
 import Student from '../models/Student.js';
 
-
 class AttendanceService {
   getCurrentWIBTime() {
     const nowWIB = moment().tz('Asia/Jakarta');
     return {
-      currentDate: nowWIB.format('YYYY-MM-DD'),
+      currentDate: nowWIB.format('YYYY-MM-DD'), // Format yang cocok dengan database
       currentTime: nowWIB.format('HH:mm:ss')
     };
   }
-
 
   async scanQRCode(data) {
     try {
@@ -20,9 +18,8 @@ class AttendanceService {
       if (!student) throw new Error('QR Code tidak valid');
 
       const { currentDate, currentTime } = this.getCurrentWIBTime();
-      const today = moment().tz('Asia/Jakarta').startOf('day').toDate();
 
-      const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
+      const existingAttendance = await Attendance.findByStudentAndDate(student.id, currentDate);
 
       if (!existingAttendance) {
         const attendance = await Attendance.create({
@@ -36,13 +33,7 @@ class AttendanceService {
 
         return {
           message: "Jam masuk berhasil dicatat",
-          attendance: {
-            id: attendance.id,
-            student_id: attendance.students_id,
-            tanggal: attendance.tanggal,
-            jam_masuk: attendance.jam_masuk,
-            jam_pulang: attendance.jam_pulang
-          }
+          attendance
         };
       } else if (!existingAttendance.jam_pulang) {
         const attendance = await Attendance.update(existingAttendance.id, {
@@ -51,13 +42,7 @@ class AttendanceService {
 
         return {
           message: "Jam pulang berhasil dicatat",
-          attendance: {
-            id: attendance.id,
-            student_id: attendance.students_id,
-            tanggal: attendance.tanggal,
-            jam_masuk: attendance.jam_masuk,
-            jam_pulang: attendance.jam_pulang
-          }
+          attendance
         };
       } else {
         throw new Error('Siswa sudah melakukan absensi masuk dan pulang hari ini');
@@ -67,15 +52,13 @@ class AttendanceService {
     }
   }
 
-
   async handleScanMasuk(unique_code) {
     const student = await Student.findByQRCode(unique_code);
     if (!student) throw new Error('QR Code tidak valid');
 
     const { currentDate, currentTime } = this.getCurrentWIBTime();
-    const today = moment().tz('Asia/Jakarta').startOf('day').toDate();
 
-    const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
+    const existingAttendance = await Attendance.findByStudentAndDate(student.id, currentDate);
 
     if (existingAttendance) {
       if (existingAttendance.jam_masuk && existingAttendance.jam_pulang) {
@@ -100,15 +83,14 @@ class AttendanceService {
       attendance
     };
   }
-  
+
   async handleScanPulang(unique_code) {
     const student = await Student.findByQRCode(unique_code);
     if (!student) throw new Error('QR Code tidak valid');
 
-    const { currentTime } = this.getCurrentWIBTime();
-    const today = moment().tz('Asia/Jakarta').startOf('day').toDate();
+    const { currentDate, currentTime } = this.getCurrentWIBTime();
 
-    const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
+    const existingAttendance = await Attendance.findByStudentAndDate(student.id, currentDate);
 
     if (!existingAttendance) {
       throw new Error('Siswa belum melakukan scan masuk hari ini');
@@ -128,7 +110,6 @@ class AttendanceService {
     };
   }
 
-
   async getStudentAttendance(studentId, date) {
     try {
       return await Attendance.findByStudentAndDate(studentId, date);
@@ -139,16 +120,12 @@ class AttendanceService {
 
   async getAttendanceByClassAndDate(classId, date) {
     try {
-      // First get all students in the class
       const students = await Student.findByClass(classId);
-      
-      // Get attendance records for all students in this class for the given date
       const attendanceData = await Attendance.findByClassAndDate(classId, date);
-      
-      // Map student data with their attendance
+
       const result = students.map(student => {
         const attendance = attendanceData.find(a => a.students_id === student.id);
-        
+
         return {
           id: student.id,
           nis: student.nis,
@@ -178,13 +155,11 @@ class AttendanceService {
 
   async updateAttendance(attendanceId, updateData) {
     try {
-      // Validate kehadiran enum
       const validKehadiran = ['Hadir', 'Sakit', 'Izin', 'Tanpa Keterangan'];
       if (!validKehadiran.includes(updateData.kehadiran)) {
         throw new Error('Status kehadiran tidak valid');
       }
 
-      // Validate time format if provided
       const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/;
       if (updateData.jam_masuk && !timeRegex.test(updateData.jam_masuk)) {
         throw new Error('Format jam masuk tidak valid');
@@ -193,13 +168,11 @@ class AttendanceService {
         throw new Error('Format jam keluar tidak valid');
       }
 
-      // Get existing attendance
       const existingAttendance = await Attendance.findById(attendanceId);
       if (!existingAttendance) {
         throw new Error('Data absensi tidak ditemukan');
       }
 
-      // Update attendance
       const attendance = await Attendance.updateAttendance(attendanceId, {
         kehadiran: updateData.kehadiran,
         jam_masuk: updateData.jam_masuk || null,
