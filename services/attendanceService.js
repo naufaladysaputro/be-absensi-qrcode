@@ -74,6 +74,7 @@ class AttendanceService {
 
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
 
+    // Validate if the student has already scanned in or out today
     if (existingAttendance) {
       if (existingAttendance.jam_masuk && existingAttendance.jam_pulang) {
         throw new Error('Siswa sudah melakukan absensi masuk dan pulang hari ini');
@@ -83,6 +84,7 @@ class AttendanceService {
       }
     }
 
+    // Create a new attendance record for check-in
     const attendance = await Attendance.create({
       students_id: student.id,
       classes_id: student.classes_id,
@@ -107,6 +109,7 @@ class AttendanceService {
 
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
 
+    // Validate if the student has scanned in before scanning out
     if (!existingAttendance) {
       throw new Error('Siswa belum melakukan scan masuk hari ini');
     }
@@ -115,6 +118,7 @@ class AttendanceService {
       throw new Error('Siswa sudah melakukan absensi masuk dan pulang hari ini');
     }
 
+    // Update the attendance record with check-out time
     const updatedAttendance = await Attendance.update(existingAttendance.id, {
       jam_pulang: currentTime
     });
