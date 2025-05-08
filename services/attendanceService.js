@@ -5,13 +5,12 @@ import Student from '../models/Student.js';
 
 class AttendanceService {
   getCurrentWIBTime() {
-    const nowWIB = dayjs().tz('Asia/Jakarta');
+    const nowWIB = moment().tz('Asia/Jakarta');
     return {
       currentDate: nowWIB.format('YYYY-MM-DD'),
       currentTime: nowWIB.format('HH:mm:ss')
     };
   }
-
 
 
   async scanQRCode(data) {
