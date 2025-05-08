@@ -101,6 +101,24 @@ class AuthController {
       });
     }
   }
+
+  async verify(req, res) {
+    try {
+      // Data user sudah tersedia di req.user dari middleware auth
+      return res.status(200).json({
+        success: true,
+        message: 'Token valid',
+        user: req.user
+      });
+    } catch (error) {
+      console.error('Error in verify:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
 }
+
 
 export default new AuthController(); 
