@@ -1,27 +1,31 @@
+import moment from 'moment-timezone';
 import Attendance from '../models/Attendance.js';
 import Student from '../models/Student.js';
 
+
 class AttendanceService {
+  getCurrentWIBTime() {
+    const nowWIB = dayjs().tz('Asia/Jakarta');
+    return {
+      currentDate: nowWIB.format('YYYY-MM-DD'),
+      currentTime: nowWIB.format('HH:mm:ss')
+    };
+  }
+
+
+
   async scanQRCode(data) {
     try {
-      // Get unique_code from request data
       const { unique_code } = data;
-      
-      // Get student data based on unique code
       const student = await Student.findByQRCode(unique_code);
-      if (!student) {
-        throw new Error('QR Code tidak valid');
-      }
+      if (!student) throw new Error('QR Code tidak valid');
 
-      const today = new Date();
-      const currentTime = today.toTimeString().split(' ')[0]; // Format: HH:MM:SS
-      const currentDate = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-      
-      // Check if student already has attendance for today
+      const { currentDate, currentTime } = this.getCurrentWIBTime();
+      const today = moment().tz('Asia/Jakarta').startOf('day').toDate();
+
       const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
-      
+
       if (!existingAttendance) {
-        // Create check-in record
         const attendance = await Attendance.create({
           students_id: student.id,
           classes_id: student.classes_id,
@@ -42,7 +46,6 @@ class AttendanceService {
           }
         };
       } else if (!existingAttendance.jam_pulang) {
-        // Update check-out time
         const attendance = await Attendance.update(existingAttendance.id, {
           jam_pulang: currentTime
         });
@@ -65,16 +68,16 @@ class AttendanceService {
     }
   }
 
+
   async handleScanMasuk(unique_code) {
     const student = await Student.findByQRCode(unique_code);
     if (!student) throw new Error('QR Code tidak valid');
-  
-    const today = new Date();
-    const currentDate = today.toISOString().split('T')[0];
-    const currentTime = today.toTimeString().split(' ')[0];
-  
+
+    const { currentDate, currentTime } = this.getCurrentWIBTime();
+    const today = moment().tz('Asia/Jakarta').startOf('day').toDate();
+
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
-    
+
     if (existingAttendance) {
       if (existingAttendance.jam_masuk && existingAttendance.jam_pulang) {
         throw new Error('Siswa sudah melakukan absensi masuk dan pulang hari ini');
@@ -83,7 +86,7 @@ class AttendanceService {
         throw new Error('Siswa telah melakukan scan masuk hari ini');
       }
     }
-  
+
     const attendance = await Attendance.create({
       students_id: student.id,
       classes_id: student.classes_id,
@@ -92,7 +95,7 @@ class AttendanceService {
       jam_pulang: null,
       kehadiran: 'Hadir'
     });
-  
+
     return {
       message: 'Jam masuk berhasil dicatat',
       attendance
@@ -102,29 +105,30 @@ class AttendanceService {
   async handleScanPulang(unique_code) {
     const student = await Student.findByQRCode(unique_code);
     if (!student) throw new Error('QR Code tidak valid');
-  
-    const today = new Date();
-    const currentTime = today.toTimeString().split(' ')[0];
-  
+
+    const { currentTime } = this.getCurrentWIBTime();
+    const today = moment().tz('Asia/Jakarta').startOf('day').toDate();
+
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
-  
+
     if (!existingAttendance) {
       throw new Error('Siswa belum melakukan scan masuk hari ini');
     }
-  
+
     if (existingAttendance.jam_pulang) {
       throw new Error('Siswa sudah melakukan absensi masuk dan pulang hari ini');
     }
-  
+
     const updatedAttendance = await Attendance.update(existingAttendance.id, {
       jam_pulang: currentTime
     });
-  
+
     return {
       message: 'Jam pulang berhasil dicatat',
       attendance: updatedAttendance
     };
   }
+
 
   async getStudentAttendance(studentId, date) {
     try {
