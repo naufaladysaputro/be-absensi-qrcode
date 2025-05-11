@@ -73,7 +73,7 @@ class AttendanceService {
     if (!student) throw new Error('QR Code tidak valid');
 
     const { currentDate, currentTime } = this.getCurrentWIBTime();
-    const today = moment().tz('Asia/Jakarta').startOf('day').toDate();
+    const today = moment().tz('Asia/Jakarta').toDate();
 
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
 
@@ -85,6 +85,8 @@ class AttendanceService {
         throw new Error('Siswa telah melakukan scan masuk hari ini');
       }
     }
+    console.log(today, currentDate, currentTime, existingAttendance, student.id);
+    console.log(typeof student.id, typeof student.classes_id);
 
     const attendance = await Attendance.create({
       students_id: student.id,
@@ -106,7 +108,7 @@ class AttendanceService {
     if (!student) throw new Error('QR Code tidak valid');
 
     const { currentTime } = this.getCurrentWIBTime();
-    const today = moment().tz('Asia/Jakarta').startOf('day').toDate();
+    const today = moment().tz('Asia/Jakarta').toDate();
 
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
 
@@ -150,7 +152,7 @@ class AttendanceService {
         const attendance = attendanceData.find(a => a.students_id === student.id);
         
         return {
-          id: student.id,
+          id: id,
           nis: student.nis,
           nama_siswa: student.nama_siswa,
           jenis_kelamin: student.jenis_kelamin,
@@ -198,6 +200,7 @@ class AttendanceService {
       if (!existingAttendance) {
         throw new Error('Data absensi tidak ditemukan');
       }
+      console.log(existingAttendance);
 
       // Update attendance
       const attendance = await Attendance.updateAttendance(attendanceId, {
