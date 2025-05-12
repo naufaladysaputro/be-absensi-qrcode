@@ -35,7 +35,7 @@ const app = express();
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3000',
-  'fe-absensi-gray.vercel.app',
+  'http://127.0.0.1:3000',
 ];
 
 app.use(cors({
@@ -51,6 +51,8 @@ app.use(cors({
   credentials: true,
 }));
 
+app.use(express.json());
+app.use(cookieParser());
 
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
