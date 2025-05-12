@@ -82,7 +82,7 @@ class Attendance {
       `)
       .eq('students_id', studentId)
       .eq('tanggal', formattedDate)
-      .single();
+      // .single();
 
     if (error && error.code !== 'PGRST116') throw error;
     return data;

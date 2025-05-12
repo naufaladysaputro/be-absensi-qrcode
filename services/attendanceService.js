@@ -77,11 +77,11 @@ class AttendanceService {
 
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
 
-    if (existingAttendance) {
-      if (existingAttendance.jam_masuk && existingAttendance.jam_pulang) {
+    if (existingAttendance[0]) {
+      if (existingAttendance[0].jam_masuk && existingAttendance[0].jam_pulang) {
         throw new Error('Siswa sudah melakukan absensi masuk dan pulang hari ini');
       }
-      if (existingAttendance.jam_masuk) {
+      if (existingAttendance[0].jam_masuk) {
         throw new Error('Siswa telah melakukan scan masuk hari ini');
       }
     }
@@ -112,15 +112,15 @@ class AttendanceService {
 
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
 
-    if (!existingAttendance) {
+    if (!existingAttendance[0]) {
       throw new Error('Siswa belum melakukan scan masuk hari ini');
     }
 
-    if (existingAttendance.jam_pulang) {
+    if (existingAttendance[0].jam_pulang) {
       throw new Error('Siswa sudah melakukan absensi masuk dan pulang hari ini');
     }
 
-    const updatedAttendance = await Attendance.update(existingAttendance.id, {
+    const updatedAttendance = await Attendance.update(existingAttendance[0].id, {
       jam_pulang: currentTime
     });
 
@@ -226,7 +226,7 @@ class AttendanceService {
   const attendanceDate = moment(tanggal).tz('Asia/Jakarta').format('YYYY-MM-DD');
   const existingAttendance = await Attendance.findByStudentAndDate(students_id, attendanceDate);
 
-  if (!existingAttendance) {
+  if (!existingAttendance[0]) {
     // Ambil data student untuk mendapatkan classes_id
     const student = await Student.findById(students_id);
     if (!student) {
