@@ -32,12 +32,25 @@ import reportRoutes from './routes/reportRoutes.js';
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'fe-absensi-gray.vercel.app',
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
 }));
-app.use(express.json());
-app.use(cookieParser());
+
 
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
