@@ -223,11 +223,28 @@ class AttendanceService {
     throw new Error('Status kehadiran tidak valid');
   }
 
-  const attendanceDate = new Date(tanggal);
+  const attendanceDate = moment(tanggal).tz('Asia/Jakarta').format('YYYY-MM-DD');
   const existingAttendance = await Attendance.findByStudentAndDate(students_id, attendanceDate);
 
   if (!existingAttendance) {
-    throw new Error('Data absensi tidak ditemukan untuk tanggal tersebut');
+    // Ambil data student untuk mendapatkan classes_id
+    const student = await Student.findById(students_id);
+    if (!student) {
+      throw new Error('Data siswa tidak ditemukan');
+  }
+
+  // Buat absensi baru jika belum ada
+    const newAttendance = await Attendance.create({
+      students_id,
+      classes_id: student.classes_id,
+      tanggal: attendanceDate,
+      kehadiran,
+      jam_masuk: jam_masuk || null,
+      jam_pulang: jam_pulang || null,
+      keterangan: keterangan || null
+    });
+
+    return newAttendance;
   }
 
   const updated = await Attendance.updateAttendance(existingAttendance.id, {
