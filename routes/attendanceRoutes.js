@@ -13,13 +13,19 @@ router.get('/student/:studentId', authMiddleware, attendanceController.getStuden
 // Get class attendance for a specific date
 router.get('/class/:classId', authMiddleware, attendanceController.getClassAttendance);
 
-// Update attendance
-router.put('/:id', authMiddleware, attendanceController.updateAttendance);
+// update attendance by student and date
+router.put('/update-by-date', attendanceController.updateAttendanceByStudentAndDate);
+
+
 
 // Scan masuk
 router.post('/scan/masuk', authMiddleware, attendanceController.scanMasuk);
 
 // Scan pulang
 router.post('/scan/pulang', authMiddleware, attendanceController.scanPulang);
+
+// Update attendance
+router.put('/:id', authMiddleware, attendanceController.updateAttendance);
+
 
 export default router;

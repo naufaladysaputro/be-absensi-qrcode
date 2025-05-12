@@ -150,9 +150,9 @@ class AttendanceService {
       // Map student data with their attendance
       const result = students.map(student => {
         const attendance = attendanceData.find(a => a.students_id === student.id);
-        
+        console.log(attendance)
         return {
-          id: id,
+          id: student.id,
           nis: student.nis,
           nama_siswa: student.nama_siswa,
           jenis_kelamin: student.jenis_kelamin,
@@ -171,6 +171,7 @@ class AttendanceService {
           }
         };
       });
+      
 
       return result;
     } catch (error) {
@@ -215,6 +216,29 @@ class AttendanceService {
       throw error;
     }
   }
+
+  async updateAttendanceByStudentAndDate({ students_id, tanggal, kehadiran, jam_masuk, jam_pulang, keterangan }) {
+  const validKehadiran = ['Hadir', 'Sakit', 'Izin', 'Tanpa Keterangan'];
+  if (!validKehadiran.includes(kehadiran)) {
+    throw new Error('Status kehadiran tidak valid');
+  }
+
+  const attendanceDate = new Date(tanggal);
+  const existingAttendance = await Attendance.findByStudentAndDate(students_id, attendanceDate);
+
+  if (!existingAttendance) {
+    throw new Error('Data absensi tidak ditemukan untuk tanggal tersebut');
+  }
+
+  const updated = await Attendance.updateAttendance(existingAttendance.id, {
+    kehadiran,
+    jam_masuk: jam_masuk || null,
+    jam_pulang: jam_pulang || null,
+    keterangan: keterangan || null
+  });
+
+  return updated;
+}
 }
 
 export default new AttendanceService();

@@ -140,6 +140,41 @@ class AttendanceController {
       });
     }
   }
+
+  async updateAttendanceByStudentAndDate(req, res) {
+  try {
+    const { students_id, tanggal, kehadiran, jam_masuk, jam_pulang, keterangan } = req.body;
+
+    if (!students_id || !tanggal || !kehadiran) {
+      return res.status(400).json({
+        success: false,
+        message: 'students_id, tanggal, dan status kehadiran wajib diisi'
+      });
+    }
+
+    const updatedAttendance = await attendanceService.updateAttendanceByStudentAndDate({
+      students_id,
+      tanggal,
+      kehadiran,
+      jam_masuk,
+      jam_pulang,
+      keterangan
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Data absensi berhasil diperbarui berdasarkan tanggal',
+      data: updatedAttendance
+    });
+  } catch (error) {
+    console.error('Error in updateAttendanceByStudentAndDate:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal memperbarui data absensi berdasarkan tanggal'
+    });
+  }
+}
+
 }
 
 export default new AttendanceController();

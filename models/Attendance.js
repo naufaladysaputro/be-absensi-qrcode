@@ -1,4 +1,5 @@
 import supabase from '../config/supabase.js';
+import moment from 'moment-timezone';
 
 class Attendance {
   static tableName = 'attendences';
@@ -70,11 +71,7 @@ class Attendance {
   }
 
   static async findByStudentAndDate(studentId, date) {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    const formattedDate = moment(date).tz('Asia/Jakarta').format('YYYY-MM-DD');
 
     const { data, error } = await supabase
       .from(this.tableName)
@@ -84,7 +81,7 @@ class Attendance {
         class:classes(*)
       `)
       .eq('students_id', studentId)
-      .eq('tanggal', date.toISOString().split('T')[0])
+      .eq('tanggal', formattedDate)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
