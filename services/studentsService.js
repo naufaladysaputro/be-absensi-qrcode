@@ -1,5 +1,6 @@
-import db from '../config/database.js';
-import qrCodesService from './qrCodesService.js';
+import db from "../config/database.js";
+import qrCodesService from "./qrCodesService.js";
+import supabase from "../config/supabase.js";
 
 /**
  * Service untuk manajemen data siswa
@@ -9,28 +10,35 @@ class StudentsService {
    * Mendapatkan semua data siswa
    * @returns {Promise<Array>} Array of students
    */
-  async getAllStudents() {
+  async getAllStudents(kelasId) {
     try {
-      const studentsRaw  = await db.query('students', 'select', {
-        columns: `
-          *,
-          class:classes(id, nama_kelas),
-          selection:selections(id, nama_rombel),
-          qr_codes_students(qr_path)
-        `,
-        orderBy: {
-          column: 'nama_siswa',
-          ascending: true
-        }
-      });
-      const students = studentsRaw.map(student => {
-        return {
-          ...student,
-          qr_path: student.qr_codes_students?.[0]?.qr_path || null,
-          qr_codes_students: undefined // remove the original array if you don't need it
-        };
-      });
-      
+      let query = supabase
+        .from("students")
+        .select(
+          `
+        *,
+        class:classes(id, nama_kelas),
+        selection:selections(id, nama_rombel),
+        qr_codes_students(qr_path)
+      `
+        )
+        .order("nama_siswa", { ascending: true })
+        .is("deleted_at", null); // jika kamu pakai soft delete
+
+      if (kelasId) {
+        query = query.eq("classes_id", parseInt(kelasId));
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      const students = data.map((student) => ({
+        ...student,
+        qr_path: student.qr_codes_students?.[0]?.qr_path || null,
+        qr_codes_students: undefined,
+      }));
+
       return students;
     } catch (error) {
       throw error;
@@ -44,15 +52,15 @@ class StudentsService {
    */
   async getStudentById(id) {
     try {
-      const students = await db.query('students', 'select', {
+      const students = await db.query("students", "select", {
         columns: `
           *,
           class:classes(id, nama_kelas),
           selection:selections(id, nama_rombel)
         `,
-        filters: { id }
+        filters: { id },
       });
-      
+
       return students.length > 0 ? students[0] : null;
     } catch (error) {
       throw error;
@@ -68,7 +76,7 @@ class StudentsService {
   async createStudent(data, userId) {
     try {
       const now = new Date().toISOString();
-      const result = await db.query('students', 'insert', {
+      const result = await db.query("students", "insert", {
         data: {
           nis: data.nis,
           nama_siswa: data.nama_siswa,
@@ -77,11 +85,11 @@ class StudentsService {
           selections_id: data.selections_id,
           modified_by: userId,
           created_at: now,
-          updated_at: now
-        }
+          updated_at: now,
+        },
       });
 
-      qrCodesService.generateQrCode(result[0], result[0].id)
+      qrCodesService.generateQrCode(result[0], result[0].id);
       return result[0].id;
     } catch (error) {
       throw error;
@@ -97,7 +105,7 @@ class StudentsService {
    */
   async updateStudent(id, data, userId) {
     try {
-      const result = await db.query('students', 'update', {
+      const result = await db.query("students", "update", {
         data: {
           nis: data.nis,
           nama_siswa: data.nama_siswa,
@@ -105,11 +113,11 @@ class StudentsService {
           classes_id: data.classes_id,
           selections_id: data.selections_id,
           modified_by: userId,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         },
-        filters: { id }
+        filters: { id },
       });
-      
+
       return result.length > 0;
     } catch (error) {
       throw error;
@@ -124,10 +132,10 @@ class StudentsService {
    */
   async deleteStudent(id, userId) {
     try {
-      const result = await db.query('students', 'delete', {
-        filters: { id }
+      const result = await db.query("students", "delete", {
+        filters: { id },
       });
-      
+
       return result.length > 0;
     } catch (error) {
       throw error;
@@ -143,16 +151,16 @@ class StudentsService {
   async checkNISExists(nis, excludeId = null) {
     try {
       const query = {
-        columns: 'id',
-        filters: { nis }
+        columns: "id",
+        filters: { nis },
       };
-      
-      const result = await db.query('students', 'select', query);
-      
+
+      const result = await db.query("students", "select", query);
+
       if (excludeId && result.length > 0) {
-        return result.some(student => student.id !== excludeId);
+        return result.some((student) => student.id !== excludeId);
       }
-      
+
       return result.length > 0;
     } catch (error) {
       throw error;
@@ -166,15 +174,15 @@ class StudentsService {
    */
   async getStudentsByClass(classId) {
     try {
-      const students = await db.query('students', 'select', {
+      const students = await db.query("students", "select", {
         columns: `
           *,
           class:classes(id, nama_kelas),
           selection:selections(id, nama_rombel)
         `,
-        filters: { classes_id: classId }
+        filters: { classes_id: classId },
       });
-      
+
       return students;
     } catch (error) {
       throw error;
@@ -188,15 +196,15 @@ class StudentsService {
    */
   async getStudentsBySelection(selectionId) {
     try {
-      const students = await db.query('students', 'select', {
+      const students = await db.query("students", "select", {
         columns: `
           *,
           class:classes(id, nama_kelas),
           selection:selections(id, nama_rombel)
         `,
-        filters: { selections_id: selectionId }
+        filters: { selections_id: selectionId },
       });
-      
+
       return students;
     } catch (error) {
       throw error;
