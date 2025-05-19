@@ -27,6 +27,7 @@ import attendanceRoutes from './routes/attendanceRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import scheduleRoutes from './routes/scheduleRoutes.js';
 
 // Initialize express app
 const app = express();
@@ -54,6 +55,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/schedules', scheduleRoutes);
 
 // Default route
 app.get('/', (req, res) => {

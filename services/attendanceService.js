@@ -1,3 +1,4 @@
+import Settings from '../models/Settings.js';
 import moment from 'moment-timezone';
 import Attendance from '../models/Attendance.js';
 import Student from '../models/Student.js';
@@ -74,6 +75,9 @@ class AttendanceService {
 
     const { currentDate, currentTime } = this.getCurrentWIBTime();
     const today = moment().tz('Asia/Jakarta').toDate();
+    const settings = await Settings.findAll();
+    
+    if (currentTime>settings.jam_masuk) throw new Error('Jam scan sudah lewat');
 
     const existingAttendance = await Attendance.findByStudentAndDate(student.id, today);
 

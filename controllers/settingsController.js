@@ -60,9 +60,9 @@ class SettingsController {
   async updateSettings(req, res) {
     try {
       const { id } = req.params;
-      const { nama_sekolah, tahun_ajaran } = req.body;
+      const { nama_sekolah, tahun_ajaran, jam_masuk } = req.body;
       const userId = req.user.id;
-      let updateData = { nama_sekolah, tahun_ajaran };
+      let updateData = { nama_sekolah, tahun_ajaran, jam_masuk };
 
       // Handle logo upload if file exists
       if (req.file) {
