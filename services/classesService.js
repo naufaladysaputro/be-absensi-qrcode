@@ -17,7 +17,8 @@ class ClassesService {
           selections_id,
           created_at,
           updated_at,
-          selection:selections(id,nama_rombel)
+          selection:selections(id,nama_rombel),
+          schedule:schedules(id,schedule_path,created_at,updated_at)
         `,
         orderBy: {
           column: 'nama_kelas',
