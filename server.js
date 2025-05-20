@@ -41,6 +41,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Serve static files
+app.use('/schedules', express.static(path.join(__dirname, 'uploads/schedules')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/exports', express.static(path.join(__dirname, 'uploads/exports')));
 
