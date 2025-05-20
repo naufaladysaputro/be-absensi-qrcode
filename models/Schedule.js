@@ -1,12 +1,13 @@
-import supabase from '../config/supabase.js';
+import supabase from "../config/supabase.js";
 
 class Schedule {
-  static tableName = 'schedules';
+  static tableName = "schedules";
 
   static async getAll() {
     const { data, error } = await supabase
       .from(this.tableName)
-      .select(`
+      .select(
+        `
         *,
         classes:classes (
           *,
@@ -19,18 +20,31 @@ class Schedule {
           id,
           username
         )
-      `)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
+      `
+      )
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return data;
   }
 
+  static async getByClassId(classes_id) {
+    const { data, error } = await supabase.from("schedules").select("*").eq("classes_id", classes_id).single(); // pastikan satu jadwal per kelas
+
+    if (error && error.code !== "PGRST116") {
+      // 116 = no rows
+      throw new Error("Failed to fetch schedule");
+    }
+
+    return data; // bisa null
+  }
+
   static async getById(id) {
     const { data, error } = await supabase
       .from(this.tableName)
-      .select(`
+      .select(
+        `
         *,
         classes:classes (
           id,
@@ -40,9 +54,10 @@ class Schedule {
           id,
           username
         )
-      `)
-      .eq('classes_id', id)
-      .is('deleted_at', null)
+      `
+      )
+      .eq("classes_id", id)
+      .is("deleted_at", null)
       .single();
 
     if (error) throw error;
@@ -52,12 +67,14 @@ class Schedule {
   static async create(scheduleData) {
     const { data, error } = await supabase
       .from(this.tableName)
-      .insert([{
-        ...scheduleData,
-        classes_id: parseInt(scheduleData.classes_id),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }])
+      .insert([
+        {
+          ...scheduleData,
+          classes_id: parseInt(scheduleData.classes_id),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ])
       .select()
       .single();
 
@@ -72,10 +89,10 @@ class Schedule {
         ...updates,
         classes_id: parseInt(updates.classes_id),
         modified_by: modifiedBy,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
-      .is('deleted_at', null)
+      .eq("id", id)
+      .is("deleted_at", null)
       .select()
       .single();
 
@@ -88,10 +105,10 @@ class Schedule {
       .from(this.tableName)
       .update({
         deleted_at: new Date().toISOString(),
-        modified_by: modifiedBy
+        modified_by: modifiedBy,
       })
-      .eq('id', id)
-      .is('deleted_at', null)
+      .eq("id", id)
+      .is("deleted_at", null)
       .select()
       .single();
 

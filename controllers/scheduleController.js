@@ -87,6 +87,28 @@ const scheduleController = {// Get all schedules
         }
     },
 
+    // Upsert schedule (create if not exists, update if exists)
+    upsertSchedule: async (req, res) => {
+        try {
+            const scheduleData = {
+                classes_id: req.body.classes_id,
+                userId: req.user.id
+            };
+
+            const schedule = await ScheduleService.upsertSchedule(scheduleData, req.file);
+            res.status(200).json({
+                status: 'success',
+                data: schedule
+            });
+        } catch (error) {
+            res.status(500).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    },
+
+
     // Delete schedule
     deleteSchedule: async (req, res) => {
         try {

@@ -54,6 +54,24 @@ router.put('/:id', (req, res, next) => {
     });
 }, scheduleController.updateSchedule);
 
+// Upsert schedule (create or update based on classes_id)
+router.post('/upsert', (req, res, next) => {
+    scheduleUpload.single('schedule')(req, res, (err) => {
+        if (err instanceof multer.MulterError) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Error saat upload file: ' + err.message
+            });
+        } else if (err) {
+            return res.status(400).json({
+                status: 'error',
+                message: err.message || 'Terjadi kesalahan saat upload file'
+            });
+        }
+        next();
+    });
+}, scheduleController.upsertSchedule);
+
 // Delete schedule
 router.delete('/:id', scheduleController.deleteSchedule);
 
