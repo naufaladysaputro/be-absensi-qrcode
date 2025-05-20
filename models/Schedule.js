@@ -9,8 +9,11 @@ class Schedule {
       .select(`
         *,
         classes:classes (
-          id,
-          nama_kelas
+          *,
+      selection:selections (
+        id,
+        nama_rombel
+      )
         ),
         user:users (
           id,
@@ -38,7 +41,7 @@ class Schedule {
           username
         )
       `)
-      .eq('id', id)
+      .eq('classes_id', id)
       .is('deleted_at', null)
       .single();
 
