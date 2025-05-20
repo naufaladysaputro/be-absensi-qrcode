@@ -56,7 +56,7 @@ class Schedule {
         )
       `
       )
-      .eq("classes_id", id)
+      .eq("id", id)
       .is("deleted_at", null)
       .single();
 
