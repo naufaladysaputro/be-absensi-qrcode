@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit';
-import { Document, Paragraph, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx';
+import { Document, Packer } from 'docx';
 import fs from 'fs';
 import fsp from 'fs/promises';
 import path from 'path';
@@ -15,7 +15,6 @@ const __dirname = path.dirname(__filename);
 
 class ReportService {
   constructor() {
-    // Buat direktori exports jika belum ada
     this.reportDir = path.join(__dirname, '../uploads/exports');
     fsp.mkdir(this.reportDir, { recursive: true }).catch(err => {
       if (err.code !== 'EEXIST') console.error('Error creating directory:', err);
@@ -24,31 +23,21 @@ class ReportService {
 
   async generateReport(month, year, classId, format = 'pdf') {
     try {
-      // Get settings data (logo & school name)
       const settings = await Settings.findAll();
       if (!settings) throw new Error('Pengaturan sekolah belum dibuat');
 
-      // Get students data
       const students = await Student.findByClass(classId);
       if (!students || students.length === 0) {
         throw new Error('Tidak ada siswa di kelas ini');
       }
 
-      // Get class name from first student
       const className = students[0].class.nama_kelas;
-
-      // Calculate date range for the month
       const startDate = moment(`${year}-${month}-01`).startOf('month');
       const endDate = moment(startDate).endOf('month');
       const daysInMonth = endDate.date();
-
-      // Get attendance data for all students in the class for the month
       const attendanceData = await this.getMonthlyAttendance(classId, startDate.toDate(), endDate.toDate());
-
-      // Count gender
       const genderCount = this.countGender(students);
 
-      // Generate report based on format
       if (format === 'pdf') {
         return await this.generatePDF(settings, students, attendanceData, {
           month: startDate.format('MMMM'),
@@ -72,19 +61,14 @@ class ReportService {
   }
 
   async getMonthlyAttendance(classId, startDate, endDate) {
-    try {
-      const { data, error } = await supabase
-        .from('attendences')
-        .select('*')
-        .eq('classes_id', classId)
-        .gte('tanggal', startDate.toISOString().split('T')[0])
-        .lte('tanggal', endDate.toISOString().split('T')[0]);
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      throw error;
-    }
+    const { data, error } = await supabase
+      .from('attendences')
+      .select('*')
+      .eq('classes_id', classId)
+      .gte('tanggal', startDate.toISOString().split('T')[0])
+      .lte('tanggal', endDate.toISOString().split('T')[0]);
+    if (error) throw error;
+    return data || [];
   }
 
   countGender(students) {
@@ -96,23 +80,14 @@ class ReportService {
   }
 
   async generatePDF(settings, students, attendanceData, reportInfo) {
-    const doc = new PDFDocument({ 
-      size: 'A4', 
-      layout: 'landscape',
-      margin: 20
-    });
-
+    const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 20 });
     const className = reportInfo.className.toLowerCase().replace(/\s+/g, '');
     const filename = `absensi-${reportInfo.month.toLowerCase()}-${className}.pdf`;
     const filepath = path.join(this.reportDir, filename);
-
     const stream = fs.createWriteStream(filepath);
     doc.pipe(stream);
-
-    // Set initial fonts
     doc.font('Helvetica');
 
-    // Add logo dengan posisi yang lebih tepat
     if (settings.logo_path) {
       const logoPath = path.join(__dirname, '..', settings.logo_path);
       try {
@@ -122,116 +97,95 @@ class ReportService {
       }
     }
 
-    // Header text dengan spacing yang sesuai screenshot
-    doc.fontSize(14)
-	       .text('DAFTAR HADIR SISWA', 0, 30, { align: 'center' })
-       .moveDown(0.3);
+    console.log('Logo Path:', settings.logo_path);
 
-    
+    // Judul utama
+    doc.fontSize(16)
+      .font('Helvetica-Bold')
+      .text('DAFTAR HADIR SISWA', 0, 30, { align: 'center' });
+
+    // Nama sekolah
+    doc.fontSize(13)
+      .font('Helvetica')
+      .text('SD Negeri 02 Ujung Menteng', { align: 'center' });
+
+    // Tahun ajaran
     doc.fontSize(12)
-       .text('SD Negeri 02 Ujung Menteng', { align: 'center' })
-       .moveDown(0.3);
+      .font('Helvetica')
+      .text('TAHUN PELAJARAN 2024/2025', { align: 'center' });
+
+    // Garis bawah kop
+    doc.moveTo(30, 80).lineTo(800, 80).stroke();
     
-    doc.text('TAHUN PELAJARAN 2024/2025', { align: 'center' })
-       .moveDown(0.8);
+    doc.font('Helvetica').fontSize(11).text(`Bulan : ${reportInfo.month}`, 30, 95).text(`Kelas : ${reportInfo.className} ${students[0].selection.nama_rombel}`, 30, 110);
 
-    // Info bulan dan kelas dengan posisi yang tepat
-    doc.fontSize(11)
-              .text(`Bulan : ${reportInfo.month}`, 30, 95)
-       .text(`Kelas : ${reportInfo.className} ${students[0].selection.nama_rombel}`, 30, 110);
-
-
-    // Table settings dengan posisi yang disesuaikan
-    const colWidths = {
-            no: 20,
-      nama: 110,
-      day: 18,
-      total: 20
-    };
-       const rowHeight = 16;
-    let startX = 30;
-    let startY = 135;
-
-
-    // Generate dates array
+    const colWidths = { no: 20, nama: 110, day: 18, total: 20 };
+    const rowHeight = 16;
+    const startX = 30;
+    let currentY = 135;
     const dates = Array.from({ length: reportInfo.daysInMonth }, (_, i) => i + 1);
-    
-    // Generate day names with correct days
     const dayNames = dates.map(date => {
-      const dayDate = moment(`${reportInfo.year}-${reportInfo.month}-${date}`, 'YYYY-MMMM-D');
-      const dayName = dayDate.format('ddd');
-      const dayMap = {
-        'Mon': 'Se',
-        'Tue': 'Sl',
-        'Wed': 'Ra',
-        'Thu': 'Ka',
-        'Fri': 'Ju',
-        'Sat': 'Sa',
-        'Sun': 'Mi'
-      };
-      const mappedDay = dayMap[dayName];
-      if (!mappedDay) {
-        console.error(`Unknown day name: ${dayName}`);
-        return dayName.substring(0, 2);
-      }
-      return mappedDay;
+      const day = moment(`${reportInfo.year}-${reportInfo.month}-${date}`, 'YYYY-MMMM-D').format('ddd');
+      return { 'Mon': 'Se', 'Tue': 'Sl', 'Wed': 'Ra', 'Thu': 'Ka', 'Fri': 'Ju', 'Sat': 'Sa', 'Sun': 'Mi' }[day] || day;
     });
 
-    // Draw table headers
-    let currentX = startX;
-    let currentY = startY;
+    const drawTableHeader = () => {
+      let headerX = startX;
+      let headerY = currentY;
+      doc.fontSize(6);
 
-    // Draw first header row (Days)
-    doc.fontSize(6);
-    
-    [
-      { text: 'No', width: colWidths.no },
-      { text: 'Nama', width: colWidths.nama }
-    ].forEach(header => {
-      doc.rect(currentX, currentY, header.width, rowHeight * 2).stroke();
-      doc.text(header.text, currentX, currentY + rowHeight / 2 + 2, {
-        width: header.width,
-        align: 'center'
+      [{ text: 'No', width: colWidths.no }, { text: 'Nama', width: colWidths.nama }].forEach(header => {
+        doc.rect(headerX, headerY, header.width, rowHeight * 2).stroke();
+        doc.text(header.text, headerX, headerY + rowHeight / 2 + 2, {
+          width: header.width,
+          align: 'center'
+        });
+        headerX += header.width;
       });
-      currentX += header.width;
-    });
 
-    dayNames.forEach((day, i) => {
-      doc.rect(currentX, currentY, colWidths.day, rowHeight).stroke();
-      doc.text(day, currentX, currentY + 4, {
-        width: colWidths.day,
-        align: 'center'
+      dayNames.forEach(day => {
+        doc.rect(headerX, headerY, colWidths.day, rowHeight).stroke();
+        doc.text(day, headerX, headerY + 4, {
+          width: colWidths.day,
+          align: 'center'
+        });
+        headerX += colWidths.day;
       });
-      currentX += colWidths.day;
-    });
 
-    ['H', 'S', 'I', 'A'].forEach(header => {
-      doc.rect(currentX, currentY, colWidths.total, rowHeight * 2).stroke();
-      doc.text(header, currentX, currentY + rowHeight / 2 + 2, {
-        width: colWidths.total,
-        align: 'center'
+      ['H', 'S', 'I', 'A'].forEach(type => {
+        doc.rect(headerX, headerY, colWidths.total, rowHeight * 2).stroke();
+        doc.text(type, headerX, headerY + rowHeight / 2 + 2, {
+          width: colWidths.total,
+          align: 'center'
+        });
+        headerX += colWidths.total;
       });
-      currentX += colWidths.total;
-    });
 
-    currentX = startX + colWidths.no + colWidths.nama;
-    currentY += rowHeight;
-
-    dates.forEach(date => {
-      doc.rect(currentX, currentY, colWidths.day, rowHeight).stroke();
-      doc.text(date.toString().padStart(2, '0'), currentX, currentY + 4, {
-        width: colWidths.day,
-        align: 'center'
+      currentY += rowHeight;
+      let currentX = startX + colWidths.no + colWidths.nama;
+      dates.forEach(date => {
+        doc.rect(currentX, currentY, colWidths.day, rowHeight).stroke();
+        doc.text(date.toString().padStart(2, '0'), currentX, currentY + 4, {
+          width: colWidths.day,
+          align: 'center'
+        });
+        currentX += colWidths.day;
       });
-      currentX += colWidths.day;
-    });
 
-    currentY += rowHeight;
-    doc.fontSize(6);
+      currentY += rowHeight;
+    };
+
+    drawTableHeader();
 
     students.forEach((student, index) => {
-      currentX = startX;
-      const studentAttendance = this.processStudentAttendance(student, attendanceData, reportInfo.daysInMonth);
+      if (currentY + rowHeight > doc.page.height - 50) {
+        doc.addPage();
+        currentY = 30;
+        drawTableHeader();
+      }
+
+      let currentX = startX;
+      const attendance = this.processStudentAttendance(student, attendanceData, reportInfo.daysInMonth);
 
       doc.rect(currentX, currentY, colWidths.no, rowHeight).stroke();
       doc.text((index + 1).toString(), currentX, currentY + 4, {
@@ -247,33 +201,29 @@ class ReportService {
       });
       currentX += colWidths.nama;
 
-      studentAttendance.daily.forEach(status => {
+      attendance.daily.forEach(status => {
         doc.rect(currentX, currentY, colWidths.day, rowHeight).stroke();
-        
         if (status === 'A') {
           doc.fillColor('#ff4d4d')
-             .rect(currentX, currentY, colWidths.day, rowHeight)
-             .fill()
-             .strokeColor('#000000')
-             .stroke();
-          
+            .rect(currentX, currentY, colWidths.day, rowHeight)
+            .fill()
+            .strokeColor('#000000')
+            .stroke();
           doc.fillColor('#ffffff');
         } else {
           doc.fillColor('#000000');
         }
-
         doc.text(status, currentX, currentY + 4, {
           width: colWidths.day,
           align: 'center'
         });
-        
         doc.fillColor('#000000');
         currentX += colWidths.day;
       });
 
       ['H', 'S', 'I', 'A'].forEach(type => {
         doc.rect(currentX, currentY, colWidths.total, rowHeight).stroke();
-        doc.text(studentAttendance.totals[type].toString(), currentX, currentY + 4, {
+        doc.text(attendance.totals[type].toString(), currentX, currentY + 4, {
           width: colWidths.total,
           align: 'center'
         });
@@ -284,16 +234,31 @@ class ReportService {
     });
 
     currentY += 15;
-    doc.fontSize(8)
-       .text('Keterangan:', 20, currentY)
-       .text('H : Hadir', 35, currentY + 15)
-       .text('S : Sakit', 35, currentY + 30)
-       .text('I : Izin', 35, currentY + 45)
-       .text('A : Alpa', 35, currentY + 60);
+    doc.fontSize(9)
+      .font('Helvetica-Bold')
+      .text('Keterangan', 30, currentY)
+      .moveDown(0.5);
 
-    doc.text(`Jumlah siswa: ${students.length}`, 20, currentY + 80)
-       .text(`Laki-laki   : ${reportInfo.genderCount.male}`, 20, currentY + 90)
-       .text(`Perempuan   : ${reportInfo.genderCount.female}`, 20, currentY + 100);
+    doc.font('Helvetica')
+      .fontSize(8)
+      .text('H : Hadir', { indent: 15 })
+      .text('S : Sakit', { indent: 15 })
+      .text('I : Izin', { indent: 15 })
+      .text('A : Alpa', { indent: 15 });
+
+    currentY = doc.y + 10;
+
+    doc.fontSize(9)
+      .font('Helvetica-Bold')
+      .text('Rekapitulasi Siswa', 30, currentY)
+      .moveDown(0.5);
+
+    doc.font('Helvetica')
+      .fontSize(8)
+      .text(`Jumlah siswa  : ${students.length}`, { indent: 15 })
+      .text(`Laki-laki     : ${reportInfo.genderCount.male}`, { indent: 15 })
+      .text(`Perempuan     : ${reportInfo.genderCount.female}`, { indent: 15 });
+
 
     doc.end();
 
@@ -306,12 +271,9 @@ class ReportService {
   async generateDOC(settings, students, attendanceData, reportInfo) {
     const filename = `attendance_${reportInfo.className}_${reportInfo.month}_${reportInfo.year}.docx`;
     const filepath = path.join(this.reportDir, filename);
-
     const doc = new Document();
-
     const buffer = await Packer.toBuffer(doc);
     await fsp.writeFile(filepath, buffer);
-
     return { filepath, filename };
   }
 

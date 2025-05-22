@@ -6,7 +6,7 @@ import upload from '../middleware/uploadMiddleware.js';
 const router = express.Router();
 
 // Upload middleware khusus logo (folder: uploads/logos, field: logo)
-const logoUpload = upload('logos').single('logo');
+const logoUpload = upload('logo').single('logo');
 
 // Get settings
 router.get('/', authMiddleware, settingsController.getSettings);
