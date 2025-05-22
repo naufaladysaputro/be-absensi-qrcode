@@ -89,7 +89,7 @@ class StudentsService {
         },
       });
 
-      qrCodesService.generateQrCode(result[0], result[0].id);
+      // await qrCodesService.generateQrCode(result[0], result[0].id);
       return result[0].id;
     } catch (error) {
       throw error;
