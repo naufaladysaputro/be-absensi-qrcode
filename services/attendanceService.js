@@ -183,7 +183,7 @@ class AttendanceService {
   async updateAttendance(attendanceId, updateData) {
     try {
       // Validate kehadiran enum
-      const validKehadiran = ["Hadir", "Sakit", "Izin", "Alfa", "Tanpa Keterangan"];
+      const validKehadiran = ["Hadir", "Sakit", "Izin", "Tanpa Keterangan", "Alfa"];
       if (!validKehadiran.includes(updateData.kehadiran)) {
         throw new Error("Status kehadiran tidak valid");
       }
@@ -219,7 +219,7 @@ class AttendanceService {
   }
 
   async updateAttendanceByStudentAndDate({ students_id, tanggal, kehadiran, jam_masuk, jam_pulang, keterangan }) {
-    const validKehadiran = ["Hadir", "Sakit", "Izin", "Alfa", "Tanpa Keterangan"];
+    const validKehadiran = ["Hadir", "Sakit", "Izin", "Tanpa Keterangan", "Alfa"];
     if (!validKehadiran.includes(kehadiran)) {
       throw new Error("Status kehadiran tidak valid");
     }
