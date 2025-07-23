@@ -116,7 +116,7 @@ class ReportService {
 
     // Garis bawah kop
     doc.moveTo(30, 80).lineTo(800, 80).stroke();
-    
+
     doc.font('Helvetica').fontSize(11).text(`Bulan : ${reportInfo.month}`, 30, 95).text(`Kelas : ${reportInfo.className} ${students[0].selection.nama_rombel}`, 30, 110);
 
     const colWidths = { no: 20, nama: 110, day: 18, total: 20 };
@@ -126,7 +126,15 @@ class ReportService {
     const dates = Array.from({ length: reportInfo.daysInMonth }, (_, i) => i + 1);
     const dayNames = dates.map(date => {
       const day = moment(`${reportInfo.year}-${reportInfo.month}-${date}`, 'YYYY-MMMM-D').format('ddd');
-      return { 'Mon': 'Se', 'Tue': 'Sl', 'Wed': 'Ra', 'Thu': 'Ka', 'Fri': 'Ju', 'Sat': 'Sa', 'Sun': 'Mi' }[day] || day;
+      return {
+        'Mon': 'Sen',
+        'Tue': 'Sel',
+        'Wed': 'Rab',
+        'Thu': 'Kam',
+        'Fri': 'Jum',
+        'Sat': 'Sab',
+        'Sun': 'Min'
+      }[day] || day;
     });
 
     const drawTableHeader = () => {
@@ -144,11 +152,16 @@ class ReportService {
       });
 
       dayNames.forEach(day => {
+        console.log(day);
+        
+        const isWeekend = (day === 'Jum' || day === 'Sab');
         doc.rect(headerX, headerY, colWidths.day, rowHeight).stroke();
         doc.text(day, headerX, headerY + 4, {
           width: colWidths.day,
           align: 'center'
         });
+        // Jika Sabtu atau Minggu, tulis merah
+        doc.fillColor(isWeekend ? '#ff4d4d' : '#000000');
         headerX += colWidths.day;
       });
 
