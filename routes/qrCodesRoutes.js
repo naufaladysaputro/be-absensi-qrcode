@@ -22,4 +22,7 @@ router.get('/class/:class_id', authMiddleware, qrCodesController.getQrCodesByCla
 // Generate QR codes for all students in a class
 router.post('/generate/class/:class_id', authMiddleware, qrCodesController.generateQrCodesByClassId);
 
+// Update QR code for a student (requires authentication)
+router.put('/update/:student_id', authMiddleware, qrCodesController.updateQrCode);
+
 export default router;

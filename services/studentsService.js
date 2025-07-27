@@ -148,24 +148,23 @@ class StudentsService {
    * @param {number} excludeId - ID of the student to exclude (optional)
    * @returns {Promise<boolean>} true if the NIS exists
    */
-  async checkNISExists(nis, excludeId = null) {
-    try {
-      const query = {
-        columns: "id",
-        filters: { nis },
-      };
+ async checkNISExists(nis, excludeId = null) {
+  try {
+    const result = await db.query("students", "select", {
+      columns: "id",
+      filters: { nis },
+    });
 
-      const result = await db.query("students", "select", query);
-
-      if (excludeId && result.length > 0) {
-        return result.some((student) => student.id !== excludeId);
-      }
-
-      return result.length > 0;
-    } catch (error) {
-      throw error;
+    // Jika ada siswa lain yang memakai NIS ini
+    if (excludeId && result.length > 0) {
+      return result.some((student) => student.id !== excludeId);
     }
+
+    return result.length > 0;
+  } catch (error) {
+    throw error;
   }
+}
 
   /**
    * Get students by class

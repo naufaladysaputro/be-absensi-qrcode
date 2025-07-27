@@ -1,5 +1,7 @@
 import studentsService from "../services/studentsService.js";
 import classesService from "../services/classesService.js";
+import Student from '../models/Student.js';
+
 
 /**
  * Controller untuk manajemen data siswa
@@ -109,6 +111,13 @@ class StudentsController {
           message: "NIS sudah terdaftar",
         });
       }
+      // const isUsed = await Student.isNISUsed(nis, id);
+      // if (isUsed) {
+      //   return res.status(400).json({
+      //     status: "error",
+      //     message: "NIS sudah terdaftar oleh siswa lain",
+      //   });
+      // }
 
       const userId = req.user.id;
       const studentId = await studentsService.createStudent(
@@ -192,13 +201,21 @@ class StudentsController {
       }
 
       // Check if the new NIS already exists (excluding current student)
-      const exists = await studentsService.checkNISExists(nis, id);
-      if (exists) {
+      // const exists = await studentsService.checkNISExists(nis, id);
+      // if (exists) {
+      //   return res.status(400).json({
+      //     status: "error",
+      //     message: "NIS sudah terdaftar",
+      //   });
+      // }
+      const isNisUsedByOther = await Student.isNISUsed(nis, id);
+      if (isNisUsedByOther) {
         return res.status(400).json({
           status: "error",
-          message: "NIS sudah terdaftar",
+          message: "NIS sudah terdaftar oleh siswa lain",
         });
       }
+
 
       const userId = req.user.id;
       const success = await studentsService.updateStudent(

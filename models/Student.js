@@ -150,6 +150,34 @@ class Student {
     if (error && error.code !== 'PGRST116') throw error;
     return data;
   }
+
+  /**
+ * Mengecek apakah ada siswa lain yang memakai NIS yang sama
+ * @param {string} nis - NIS yang akan dicek
+ * @param {number|null} excludeId - ID siswa yang sedang diupdate (jika ada)
+ * @returns {Promise<boolean>} - true jika NIS dipakai siswa lain
+ */
+  static async isNISUsed(nis, excludeId = null) {
+  const { data, error } = await supabase
+    .from(this.tableName)
+    .select("id")
+    .eq("nis", nis)
+    .is("deleted_at", null)
+    .maybeSingle(); // Ambil satu saja
+
+  if (error) throw error;
+
+  // Jika tidak ditemukan, artinya NIS belum dipakai
+  if (!data) return false;
+
+  // Jika ditemukan dan ID-nya sama dengan siswa yg sedang diupdate, tidak masalah
+  if (excludeId && data.id === parseInt(excludeId)) return false;
+
+  // Kalau ditemukan tapi ID beda, berarti sudah dipakai siswa lain
+  return true;
+}
+
+
 }
 
 export default Student;

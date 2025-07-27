@@ -197,6 +197,58 @@ class QrCodesController {
       });
     }
   }
+
+    /**
+   * Update QR Code untuk siswa
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async updateQrCode(req, res) {
+    try {
+      const { student_id } = req.params;
+
+      // Cek apakah siswa ada
+      const student = await studentsService.getStudentById(student_id);
+      if (!student) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Siswa tidak ditemukan'
+        });
+      }
+
+      // Cek apakah QR Code siswa sudah ada
+      const existingQrCode = await qrCodesService.getQrCodeByStudentId(student_id);
+      if (!existingQrCode) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'QR Code belum tersedia, silakan generate terlebih dahulu'
+        });
+      }
+
+      // Hapus QR Code lama
+      await qrCodesService.deleteQrCode(student_id);
+
+      // Buat QR Code baru
+      const userId = req.user.id;
+      const updatedQrCode = await qrCodesService.generateQrCode(student, userId);
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'QR Code berhasil diperbarui',
+        data: updatedQrCode
+      });
+    } catch (error) {
+      console.error('Error in updateQrCode controller:', error);
+      return res.status(500).json({
+        status: 'error',
+        message: 'Terjadi kesalahan saat memperbarui QR Code',
+        detail: error.message
+      });
+    }
+  }
+
 }
+
+
 
 export default new QrCodesController();
