@@ -174,35 +174,35 @@ class QrCodesController {
   }
 
   /**
-   * Generate QR codes for all students in a class
-   */
+ * Generate or update QR codes for all students in a class
+ */
   async generateQrCodesByClassId(req, res) {
     try {
       const { class_id } = req.params;
       const userId = req.user.id;
 
-      const results = await qrCodesService.generateQrCodesForClass(class_id, userId);
+      const results = await qrCodesService.generateOrUpdateQrCodesForClass(class_id, userId);
 
       return res.status(201).json({
         status: 'success',
-        message: `${results.generated.length} QR Code berhasil dibuat`,
+        message: `${results.created.length} QR Code dibuat, ${results.updated.length} diperbarui`,
         data: results
       });
     } catch (error) {
       console.error('Error in generateQrCodesByClassId controller:', error);
       return res.status(500).json({
         status: 'error',
-        message: 'Terjadi kesalahan saat generate QR Code massal',
+        message: 'Terjadi kesalahan saat membuat/memperbarui QR Code massal',
         detail: error.message
       });
     }
   }
 
-    /**
-   * Update QR Code untuk siswa
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
+  /**
+ * Update QR Code untuk siswa
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
   async updateQrCode(req, res) {
     try {
       const { student_id } = req.params;
