@@ -105,14 +105,20 @@ class ReportService {
       .text('DAFTAR HADIR SISWA', 0, 30, { align: 'center' });
 
     // Nama sekolah
+    // doc.fontSize(13)
+    //   .font('Helvetica')
+    //   .text('SD Negeri 02 Ujung Menteng', { align: 'center' });
     doc.fontSize(13)
       .font('Helvetica')
-      .text('SD Negeri 02 Ujung Menteng', { align: 'center' });
+      .text(settings.nama_sekolah, { align: 'center' });
 
     // Tahun ajaran
+    // doc.fontSize(12)
+    //   .font('Helvetica')
+    //   .text('TAHUN PELAJARAN 2024/2025', { align: 'center' });
     doc.fontSize(12)
       .font('Helvetica')
-      .text('TAHUN PELAJARAN 2024/2025', { align: 'center' });
+      .text(`TAHUN PELAJARAN ${settings.tahun_ajaran}`, { align: 'center' });
 
     // Garis bawah kop
     doc.moveTo(30, 80).lineTo(800, 80).stroke();
@@ -153,7 +159,7 @@ class ReportService {
 
       dayNames.forEach(day => {
         console.log(day);
-        
+
         const isWeekend = (day === 'Jum' || day === 'Sab');
         doc.rect(headerX, headerY, colWidths.day, rowHeight).stroke();
         doc.text(day, headerX, headerY + 4, {
