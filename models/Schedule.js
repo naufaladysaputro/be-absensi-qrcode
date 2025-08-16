@@ -31,13 +31,13 @@ class Schedule {
 
   static async getByClassId(classes_id) {
     const { data, error } = await supabase
-  .from("schedules")
-  .select("*")
-  .eq("classes_id", classes_id)
-  .order("id", { ascending: false }) // id terbesar biasanya paling baru
-  .limit(1);
- // pastikan satu jadwal per kelas
-console.log({data, error});
+      .from("schedules")
+      .select("*")
+      .eq("classes_id", classes_id)
+      .order("id", { ascending: false }) // id terbesar biasanya paling baru
+      .limit(1);
+    // pastikan satu jadwal per kelas
+    console.log({ data, error });
     if (error && error.code !== "PGRST116") {
       // 116 = no rows
       throw new Error("Failed to fetch schedule");
@@ -46,29 +46,34 @@ console.log({data, error});
     return data; // bisa null
   }
 
-  static async getById(id) {
-    const { data, error } = await supabase
-      .from(this.tableName)
-      .select(
-        `
-        *,
-        classes:classes (
-          id,
-          nama_kelas
-        ),
-        user:users (
-          id,
-          username
-        )
+static async getById(id) {
+  console.log("Fetching schedule by ID:", id);
+  const { data, error } = await supabase
+    .from(this.tableName)
+    .select(
       `
+      *,
+      classes:classes (
+        id,
+        nama_kelas
+      ),
+      user:users (
+        id,
+        username
       )
-      .eq("id", id)
-      .is("deleted_at", null)
-      .single();
+    `
+    )
+    .is("deleted_at", null)
+    .eq("id", id)
+    .order("created_at", { descending: true }) // ambil paling baru
+    .limit(1)
+    .single();
+    
 
-    if (error) throw error;
-    return data;
-  }
+  if (error) throw error;
+  return data;
+}
+
 
   static async create(scheduleData) {
     const { data, error } = await supabase
