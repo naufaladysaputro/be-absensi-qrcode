@@ -30,8 +30,14 @@ class Schedule {
   }
 
   static async getByClassId(classes_id) {
-    const { data, error } = await supabase.from("schedules").select("*").eq("classes_id", classes_id).single(); // pastikan satu jadwal per kelas
-
+    const { data, error } = await supabase
+  .from("schedules")
+  .select("*")
+  .eq("classes_id", classes_id)
+  .order("id", { ascending: false }) // id terbesar biasanya paling baru
+  .limit(1);
+ // pastikan satu jadwal per kelas
+console.log({data, error});
     if (error && error.code !== "PGRST116") {
       // 116 = no rows
       throw new Error("Failed to fetch schedule");
