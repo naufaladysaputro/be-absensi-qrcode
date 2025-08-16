@@ -148,7 +148,7 @@ class AttendanceController {
     if (!students_id || !tanggal || !kehadiran) {
       return res.status(400).json({
         success: false,
-        message: 'students_id, tanggal, dan status kehadiran wajib diisi'
+        message: 'status kehadiran wajib diisi'
       });
     }
 
